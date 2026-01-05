@@ -59,7 +59,7 @@ flask run
 ## 项目结构
 
 databaseFinal
-
+```
 │  app.py    # Flask 入口
 │  db.py    # 数据库连接模块
 │
@@ -67,7 +67,7 @@ databaseFinal
 │      
 │
 └─sql    # sql代码
-        
+```        
 
 ## 改动
 
