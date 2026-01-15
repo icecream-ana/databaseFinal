@@ -1,3 +1,6 @@
+USE FleetDB
+GO
+
 -- 删除已存在的表（按照依赖关系）
 DROP TABLE IF EXISTS history_log;
 DROP TABLE IF EXISTS exception_events;
