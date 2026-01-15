@@ -8,6 +8,7 @@ import db
 from auth import login_required, role_required, ROLE_DRIVER, ROLE_SUPERVISOR, current_user
 
 import re
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
@@ -73,6 +74,32 @@ def mssql_error_code_and_message(e: Exception):
 def is_overload_trigger_error(e: Exception) -> bool:
     code, msg = mssql_error_code_and_message(e)
     return code == 50000 and ("车辆超载" in msg)
+
+# 解析时间
+def parse_date_range(start_str, end_str):
+    """
+    兼容输入：
+      - YYYY-MM-DD
+      - YYYY-MM-DD HH:MM:SS
+      - YYYY-MM-DDTHH:MM (datetime-local)
+    输出：
+      start_dt: 当天 00:00:00
+      end_dt:   (结束日期 + 1天) 00:00:00  （左闭右开）
+    """
+    if not start_str or not end_str:
+        return None, None
+
+    # 统一只取日期部分（前 10 位：YYYY-MM-DD）
+    start_str = start_str.strip()[:10]
+    end_str = end_str.strip()[:10]
+
+    start_date = datetime.strptime(start_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_str, "%Y-%m-%d")
+
+    start_dt = start_date
+    end_dt = end_date + timedelta(days=1)
+    return start_dt, end_dt
+
 
 # ----------------------------
 # Login / Logout
@@ -487,21 +514,6 @@ def master_driver_delete_post(driver_id):
         flash(f"删除失败：{e}", "error")
 
     return redirect(url_for("master_drivers"))
-
-
-@app.get("/master/fleets")
-@login_required
-def master_fleets():
-    user = current_user()
-    rows = db.fetch_all(
-        """
-        SELECT f.fleet_id, f.fleet_name, c.center_name
-        FROM fleets f
-        JOIN centers c ON c.center_id=f.center_id
-        ORDER BY c.center_id, f.fleet_id
-        """
-    )
-    return render_template("master_fleets.html", user=user, fleets=rows)
 
 # ----------------------------
 # Orders
@@ -1071,9 +1083,9 @@ def resources_center():
 def resources_fleet_detail(fleet_id):
     user = current_user()
     # Supervisor can view any fleet in same center, or restrict to own; here keep simple: own fleet only
-    if not supervisor_fleet_guard(fleet_id):
-        flash("仅允许查看自己监管的车队资源。", "error")
-        return redirect(url_for("resources_center"))
+    # if not supervisor_fleet_guard(fleet_id):
+    #     flash("仅允许查看自己监管的车队资源。", "error")
+    #     return redirect(url_for("resources_center"))
 
     vehicles = db.fetch_all(
         """
@@ -1101,39 +1113,56 @@ def resources_fleet_detail(fleet_id):
 def report_driver_performance():
     user = current_user()
 
-    # Supervisor can choose; driver is locked to self
     driver_id = request.args.get("driver_id")
     if user["role"] == ROLE_DRIVER:
         driver_id = str(user["driver_id"])
 
-    # defaults
-    start_default = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
-    end_default = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    start_dt = parse_dt(request.args.get("start"), start_default)
-    end_dt = parse_dt(request.args.get("end"), end_default)
+    # ===== 默认日期：本月 =====
+    today = datetime.today()
+    start_default = today.replace(day=1).strftime("%Y-%m-%d")
+    end_default = today.strftime("%Y-%m-%d")
+
+    start_str = request.args.get("start", start_default)
+    end_str = request.args.get("end", end_default)
+
+    start_dt, end_dt = parse_date_range(start_str, end_str)
+
+    if start_dt and end_dt and end_dt <= start_dt:
+        flash("结束日期必须大于等于开始日期。", "error")
+        return redirect(url_for("report_driver_performance"))
 
     drivers = []
     if user["role"] == ROLE_SUPERVISOR:
-        drivers = db.fetch_all("SELECT driver_id, name FROM drivers WHERE fleet_id=%s ORDER BY driver_id", (user["fleet_id"],))
+        drivers = db.fetch_all(
+            "SELECT driver_id, name FROM drivers WHERE fleet_id=%s ORDER BY driver_id",
+            (user["fleet_id"],)
+        )
 
     summary = None
     details = []
-    if driver_id:
-        # guard for supervisor: driver must be in their fleet
+    if driver_id and start_dt and end_dt:
         if user["role"] == ROLE_SUPERVISOR:
-            d = db.fetch_one("SELECT driver_id, fleet_id FROM drivers WHERE driver_id=%s", (int(driver_id),))
+            d = db.fetch_one(
+                "SELECT driver_id, fleet_id FROM drivers WHERE driver_id=%s",
+                (int(driver_id),)
+            )
             if not d or d["fleet_id"] != user["fleet_id"]:
                 flash("只能查询自己车队的司机。", "error")
                 return redirect(url_for("report_driver_performance"))
-        summary, details = db.call_proc_sp_driver_performance(int(driver_id), start_dt, end_dt)
+
+        summary, details = db.call_proc_sp_driver_performance(
+            int(driver_id),
+            start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            end_dt.strftime("%Y-%m-%d %H:%M:%S")
+        )
 
     return render_template(
         "report_driver_performance.html",
         user=user,
         drivers=drivers,
         driver_id=driver_id,
-        start=start_dt,
-        end=end_dt,
+        start=start_str,  # YYYY-MM-DD
+        end=end_str,
         summary=summary,
         details=details
     )

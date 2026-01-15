@@ -49,6 +49,9 @@
     <textarea class="form-control" name="description" rows="3" required></textarea>
   </div>
 
-  <button class="btn btn-primary" type="submit">提交</button>
+  <div class="mt-3">
+    <button class="btn btn-primary" type="submit">提交</button>
+    <a class="btn btn-secondary ms-2" href="{{ url_for('exceptions_list') }}">返回</a>
+  </div>
 </form>
 {% endblock %}
