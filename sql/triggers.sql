@@ -47,9 +47,20 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- 场景 A: 当运单状态变为“已完成”
+    -- 场景 A: 运单状态变更引发的车辆状态流转
     IF UPDATE(status)
     BEGIN
+        -- 1. 当运单状态从“待分配”变为“运输中”时，若对应车辆当前处于空闲状态，则将其转换为“运输中”
+        UPDATE v
+        SET status = N'运输中'
+        FROM vehicles v
+        JOIN inserted i ON v.vehicle_id = i.vehicle_id
+        JOIN deleted d ON i.order_id = d.order_id
+        WHERE i.status = N'运输中' 
+          AND d.status = N'待分配' 
+          AND v.status = N'空闲';
+
+        -- 2. 当运单状态变为“已完成”时，检查是否可以释放车辆
         -- 找出所有在本次更新中涉及的车辆，且该车辆目前状态为 '运输中'
         -- 检查这些车辆是否还有未完成的运单
         

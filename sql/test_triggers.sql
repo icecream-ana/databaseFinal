@@ -102,10 +102,31 @@ PRINT ' ';
 PRINT '--- 开始测试 Trigger 2: 车辆状态自动流转 ---';
 GO
 
+-- 2.0 运单分配 -> 车辆变运输中
+-- 预设：目前车辆已分配一个订单，状态为'待分配'，车辆状态为'空闲'
+-- 注意：Test 1.1 中已经插入了一个 '待分配' 的订单，车辆目前应是 '空闲'
+DECLARE @VehicleID INT = (SELECT TOP 1 vehicle_id FROM vehicles);
+DECLARE @PreStatus NVARCHAR(50) = (SELECT status FROM vehicles WHERE vehicle_id = @VehicleID);
+PRINT 'Test 2.0 [准备]: 当前车辆状态: ' + @PreStatus;
+
+-- 操作：将该“待分配”订单更新为“运输中”
+UPDATE orders 
+SET status = N'运输中' 
+WHERE vehicle_id = @VehicleID AND status = N'待分配';
+
+-- 验证：车辆状态是否变为 '运输中'
+DECLARE @NewStatus0 NVARCHAR(50) = (SELECT status FROM vehicles WHERE vehicle_id = @VehicleID);
+IF @NewStatus0 = N'运输中'
+    PRINT 'Test 2.0 [运单开始 -> 运输中]: 成功 (PASSED)';
+ELSE
+    PRINT 'Test 2.0 [运单开始 -> 运输中]: 失败, 当前状态: ' + @NewStatus0 + ' (FAILED)';
+GO
+
 DECLARE @VehicleID INT = (SELECT TOP 1 vehicle_id FROM vehicles);
 DECLARE @CurrStatus NVARCHAR(50);
 
 -- 预设环境：将车辆状态设为“运输中”，并将已有订单设为“运输中”
+-- (Test 2.0 已经完成了这个状态，但为了防Test 2.0失败，这里强制设置一次)
 UPDATE vehicles SET status = N'运输中' WHERE vehicle_id = @VehicleID;
 UPDATE orders SET status = N'运输中' WHERE vehicle_id = @VehicleID;
 
