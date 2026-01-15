@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>车队/中心查询</h4>
+
+<table class="table table-striped mt-2">
+  <thead>
+    <tr>
+      <th>车队ID</th>
+      <th>车队名称</th>
+      <th>中心</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in fleets %}
+      <tr>
+        <td>{{ f.fleet_id }}</td>
+        <td>{{ f.fleet_name }}</td>
+        <td>{{ f.center_name }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>异常司机/车辆预警（车队 {{ user.fleet_id }}）</h4>
+<table class="table table-striped mt-2">
+  <thead><tr><th>司机</th><th>车牌</th><th>30天异常次数</th><th>30天罚款</th><th>车辆状态</th><th>预警原因</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.driver_name }}</td>
+        <td>{{ r.license_plate_number }}</td>
+        <td>{{ r.exception_count_30d }}</td>
+        <td>{{ r.total_fines_30d }}</td>
+        <td>{{ r.vehicle_status }}</td>
+        <td>{{ r.warning_reason }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

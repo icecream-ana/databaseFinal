@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>近7天异常告警（车队 {{ user.fleet_id }}）</h4>
+<table class="table table-striped mt-2">
+  <thead><tr><th>时间</th><th>类型</th><th>状态</th><th>罚款</th><th>车牌</th><th>司机</th><th>目的地</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.occurred_time }}</td>
+        <td>{{ r.exception_type }}</td>
+        <td>{{ r.exception_status }}</td>
+        <td>{{ r.fine_amount }}</td>
+        <td>{{ r.license_plate_number }}</td>
+        <td>{{ r.driver_name }}</td>
+        <td>{{ r.destination }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

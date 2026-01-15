@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>车队资源详情（车队 {{ fleet_id }}）</h4>
+
+<table class="table table-striped mt-2">
+  <thead><tr><th>ID</th><th>车牌</th><th>最大载重</th><th>活跃占用重量</th><th>状态</th></tr></thead>
+  <tbody>
+    {% for v in vehicles %}
+      <tr>
+        <td>{{ v.vehicle_id }}</td>
+        <td>{{ v.license_plate_number }}</td>
+        <td>{{ v.max_weight }}</td>
+        <td>{{ v.active_weight }}</td>
+        <td>{{ v.status }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

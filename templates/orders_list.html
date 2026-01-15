@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="mb-0">运单列表</h4>
+
+  {% if user.role == 'supervisor' %}
+    <a class="btn btn-sm btn-primary" href="{{ url_for('orders_new') }}">新建订单</a>
+  {% endif %}
+</div>
+
+<!-- ================= 筛选条件 ================= -->
+<form method="get" action="{{ url_for('orders_list') }}" class="card p-3 mb-3 mt-2">
+  <div class="row align-items-end">
+    <div class="col-md-4 mb-2">
+      <label class="form-label">范围</label>
+      <select class="form-select" name="scope">
+        {% if user.role == 'supervisor' %}
+          <option value="all"  {% if scope == 'all' %}selected{% endif %}>所有订单</option>
+          <option value="mine" {% if scope == 'mine' %}selected{% endif %}>我的订单</option>
+        {% else %}
+          <option value="mine" selected>我的订单</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div class="col-md-4 mb-2">
+      <label class="form-label">分配状态</label>
+      <select class="form-select" name="assign">
+        <option value="all"        {% if assign == 'all' %}selected{% endif %}>全部</option>
+        <option value="assigned"   {% if assign == 'assigned' %}selected{% endif %}>已分配</option>
+        <option value="unassigned" {% if assign == 'unassigned' %}selected{% endif %}>待分配</option>
+      </select>
+    </div>
+
+    <div class="col-md-4 mb-2">
+      <button class="btn btn-primary w-100" type="submit">筛选</button>
+    </div>
+  </div>
+
+  <div class="text-muted small mt-2">
+    说明：待分配 = 车辆或司机任一为空；已分配 = 车辆和司机均已指定。
+  </div>
+</form>
+
+<!-- ================= 运单列表 ================= -->
+<table class="table table-striped mt-2">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>创建时间</th>
+      <th>目的地</th>
+      <th>重量</th>
+      <th>体积</th>
+      <th>车牌</th>
+      <th>司机</th>
+      <th>状态</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for o in orders %}
+      <tr>
+        <td>{{ o.order_id }}</td>
+        <td>{{ o.created_at }}</td>
+        <td>{{ o.destination }}</td>
+        <td>{{ o.weight }}</td>
+        <td>{{ o.volume }}</td>
+        <td>{{ o.license_plate_number or '-' }}</td>
+        <td>{{ o.driver_name or '-' }}</td>
+        <td>{{ o.status }}</td>
+        <td>
+          <a href="{{ url_for('order_detail', order_id=o.order_id) }}">详情</a>
+
+          {% if user.role == 'supervisor' %}
+            | <a href="{{ url_for('order_edit', order_id=o.order_id) }}">修改</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

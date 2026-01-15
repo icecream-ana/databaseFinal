@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>{{ '新增车辆' if not vehicle else '编辑车辆' }}</h4>
+
+<form method="post">
+  <div class="mb-2">
+    <label class="form-label">车牌号</label>
+    <input class="form-control" name="license_plate_number" required value="{{ vehicle.license_plate_number if vehicle else '' }}">
+  </div>
+
+  <div class="row">
+    <div class="col mb-2">
+      <label class="form-label">最大载重(kg)</label>
+      <input class="form-control" name="max_weight" type="number" step="0.01" required value="{{ vehicle.max_weight if vehicle else '' }}">
+    </div>
+    <div class="col mb-2">
+      <label class="form-label">最大容积(m³)</label>
+      <input class="form-control" name="max_volume" type="number" step="0.01" required value="{{ vehicle.max_volume if vehicle else '' }}">
+    </div>
+  </div>
+
+  {% if vehicle %}
+    <div class="mb-2">
+      <label class="form-label">状态</label>
+      <select class="form-select" name="status">
+        {% for s in ['空闲','运输中','异常'] %}
+          <option value="{{ s }}" {% if vehicle.status==s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  {% endif %}
+
+  <button class="btn btn-primary" type="submit">保存</button>
+  <a class="btn btn-secondary" href="{{ url_for('master_vehicles') }}">返回</a>
+</form>
+{% endblock %}

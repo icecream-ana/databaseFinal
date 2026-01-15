@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>资源查询（按配送中心）</h4>
+
+<form method="get" class="row g-2 align-items-end">
+  <div class="col-md-6">
+    <label class="form-label">配送中心</label>
+    <select class="form-select" name="center_id">
+      {% for c in centers %}
+        <option value="{{ c.center_id }}" {% if c.center_id==center_id %}selected{% endif %}>{{ c.center_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary" type="submit">查询</button>
+  </div>
+</form>
+
+<table class="table table-striped mt-3">
+  <thead><tr><th>车队ID</th><th>车队名称</th><th>空闲</th><th>运输中</th><th>异常</th><th></th></tr></thead>
+  <tbody>
+    {% for f in fleets %}
+      <tr>
+        <td>{{ f.fleet_id }}</td>
+        <td>{{ f.fleet_name }}</td>
+        <td>{{ f.idle_cnt }}</td>
+        <td>{{ f.transit_cnt }}</td>
+        <td>{{ f.abnormal_cnt }}</td>
+        <td><a href="{{ url_for('resources_fleet_detail', fleet_id=f.fleet_id) }}">车队详情</a></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="text-muted small">说明：本示例默认限制主管仅能查看自己监管车队的详情页（可按需要放开）。</div>
+{% endblock %}
