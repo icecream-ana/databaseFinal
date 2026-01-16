@@ -796,10 +796,21 @@ def order_edit_post(order_id):
                 return redirect(url_for("order_edit", order_id=order_id))
 
         # 校验状态
-        if status in ["运输中", "已完成", "异常"]:
-            if vehicle_id is None or driver_id is None:
-                flash("运输中/已完成/异常 状态必须已分配车辆和司机。", "error")
+        old_status = o["status"]
+
+        if vehicle_id is None or driver_id is None:
+            if status != "待分配":
+                flash("未分配车辆或司机的运单，状态必须为“待分配”。", "error")
                 return redirect(url_for("order_edit", order_id=order_id))
+            
+        if old_status != status:
+            if (old_status != "运输中" and status == "已完成"):
+                flash(f"不允许将运单状态从“{old_status}”修改为“{status}”。", "error")
+                return redirect(url_for("order_edit", order_id=order_id))
+
+        if old_status == "异常":
+            flash("不允许修改异常订单的状态，请通过处理异常完成状态改变", "error")
+            return redirect(url_for("order_edit", order_id=order_id))
 
         db.execute(
             """

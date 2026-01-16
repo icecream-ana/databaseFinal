@@ -68,12 +68,12 @@
         <label class="form-label">运单状态</label>
         <select class="form-select" name="status">
           {% set cur_status = order.status %}
-          {% for s in ['待分配','运输中','已完成','异常'] %}
+          {% for s in ['待分配','运输中','已完成'] %}
             <option value="{{ s }}" {% if cur_status == s %}selected{% endif %}>{{ s }}</option>
           {% endfor %}
         </select>
         <div class="text-muted small mt-1">
-          说明：未分配车辆和司机的运单状态必须为待分配
+          说明：未分配车辆和司机的运单状态必须为待分配；异常状态通过异常事件的创建和处理自动变化；仅可将运输中的订单状态变为已完成
         </div>
       </div>
     {% else %}
