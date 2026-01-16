@@ -136,13 +136,13 @@ BEGIN
         JOIN orders o ON i.order_id = o.order_id
         WHERE i.status = N'已处理' AND d.status <> N'已处理'; -- 状态流转检测
         
-        -- 更新运单状态：只有“运输时异常”处理完后，才需恢复运单状态为“运输中”
+        -- 更新运单状态：只要异常被处理，且运单当前是“异常”状态，均恢复为“运输中”
+        -- (注：空闲时异常通常不关联运输中运单，但如果有关联则同样处理)
         UPDATE o
         SET status = N'运输中'
         FROM orders o
         JOIN #HandledExceptions he ON o.order_id = he.order_id
-        WHERE he.exception_type = N'运输时异常'
-          AND o.status = N'异常';
+        WHERE o.status = N'异常';
 
         -- 更新车辆状态
         -- 1. 运输时异常 -> 恢复为“运输中” (假设任务继续) 或 “空闲” (如果没有任务)
