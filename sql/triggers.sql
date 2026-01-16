@@ -88,6 +88,32 @@ BEGIN
 END;
 GO
 
+-- 针对异常表发生的 Trigger (Trigger 2 Part C: 异常发生)
+-- 当异常发生时，对应运单和车辆状态变为“异常”
+CREATE OR ALTER TRIGGER trg_exception_occurred_vehicle_status
+ON exception_events
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. 更新运单状态为“异常”
+    UPDATE o
+    SET status = N'异常'
+    FROM orders o
+    JOIN inserted i ON o.order_id = i.order_id
+    WHERE o.status <> N'异常';
+
+    -- 2. 更新车辆状态为“异常”
+    UPDATE v
+    SET status = N'异常'
+    FROM vehicles v
+    JOIN orders o ON v.vehicle_id = o.vehicle_id
+    JOIN inserted i ON o.order_id = i.order_id
+    WHERE v.status <> N'异常';
+END;
+GO
+
 -- 针对异常表处理的 Trigger (Trigger 2 Part B)
 CREATE OR ALTER TRIGGER trg_exception_handled_vehicle_status
 ON exception_events

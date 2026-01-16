@@ -157,22 +157,32 @@ DECLARE @VehicleID INT = (SELECT TOP 1 vehicle_id FROM vehicles);
 DECLARE @DriverID INT = (SELECT TOP 1 driver_id FROM drivers);
 DECLARE @CurrStatus NVARCHAR(50);
 
--- 预设环境：车辆状态“异常”，有一个“运输中”的订单（用来挂载异常）
-UPDATE vehicles SET status = N'异常' WHERE vehicle_id = @VehicleID;
+-- 预设环境：车辆状态“运输中” (正常)
+UPDATE vehicles SET status = N'运输中' WHERE vehicle_id = @VehicleID;
 
 -- 插入一个新订单用于关联异常
 INSERT INTO orders (weight, volume, destination, vehicle_id, driver_id, status)
 VALUES (100.00, 5.00, N'异常测试单', @VehicleID, @DriverID, N'运输中');
 DECLARE @OrderId INT = SCOPE_IDENTITY();
 
--- 2.2 插入异常事件 (运输时异常)
+-- 2.2 插入异常事件 (运输时异常) - 触发器应自动将状态置为异常
 INSERT INTO exception_events (order_id, exception_type, occurred_time, description, status)
 VALUES (@OrderId, N'运输时异常', GETDATE(), N'车辆故障', N'待处理');
 DECLARE @EventID INT = SCOPE_IDENTITY();
 
+-- 验证：检查是否自动变更为“异常”
+DECLARE @DescVehicleStatus NVARCHAR(50) = (SELECT status FROM vehicles WHERE vehicle_id = @VehicleID);
+DECLARE @DescOrderStatus NVARCHAR(50) = (SELECT status FROM orders WHERE order_id = @OrderId);
+
+IF @DescVehicleStatus = N'异常' AND @DescOrderStatus = N'异常'
+    PRINT 'Test 2.2 [异常发生 -> 状态自动变更]: 成功 (PASSED)';
+ELSE
+    PRINT 'Test 2.2 [异常发生 -> 状态自动变更]: 失败, 车辆: ' + @DescVehicleStatus + ', 运单: ' + @DescOrderStatus + ' (FAILED)';
+
 SELECT @CurrStatus = status FROM vehicles WHERE vehicle_id = @VehicleID;
 PRINT '   当前车辆状态(应为异常): ' + @CurrStatus;
 
+-- 2.3 异常处理流转
 -- 操作：处理异常
 UPDATE exception_events SET status = N'已处理' WHERE event_id = @EventID;
 
@@ -181,9 +191,9 @@ SELECT @NewStatus = status FROM vehicles WHERE vehicle_id = @VehicleID;
 
 -- 预期：运输时异常处理后，车辆恢复为“运输中”（因为属于运输过程中的恢复）
 IF @NewStatus = N'运输中'
-    PRINT 'Test 2.2 [运输异常处理 -> 恢复运输]: 成功 (PASSED)';
+    PRINT 'Test 2.3 [运输异常处理 -> 恢复运输]: 成功 (PASSED)';
 ELSE
-    PRINT 'Test 2.2 [运输异常处理 -> 恢复运输]: 失败, 当前状态: ' + @NewStatus + ' (FAILED)';
+    PRINT 'Test 2.3 [运输异常处理 -> 恢复运输]: 失败, 当前状态: ' + @NewStatus + ' (FAILED)';
 GO
 
 -- ============================================================
