@@ -7,15 +7,6 @@
 后端：SQL Sever
 
 ## 环境配置
-
-**python环境准备**
-
-```pyhton
-pip install flask pymssql
-```
-
-
-
 **数据库准备**
 
 在本地电脑上建一个数据库，名字为FleetDB，配置sa用户密码为123456
@@ -53,13 +44,14 @@ DB_CONFIG = {
 在databaseFinal文件夹下运行命令
 
 ```
+pip install -r requirements.txt
 flask run
 ```
 
 ## 项目结构
 
-databaseFinal
 ```
+databaseFinal
 │  app.py    # Flask 入口
 │  db.py    # 数据库连接模块
 │

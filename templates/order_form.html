@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center">
+  <h4>
+    {% if mode == 'edit' %}
+      修改/分配运单（订单 #{{ order.order_id }}）
+    {% else %}
+      新建运单（车队 {{ user.fleet_id }}）
+    {% endif %}
+  </h4>
+  <a class="btn btn-sm btn-secondary" href="{{ url_for('orders_list') }}">返回列表</a>
+</div>
+
+<div class="card p-3 mt-2">
+  <form method="post"
+        action="{% if mode == 'edit' %}{{ url_for('order_edit_post', order_id=order.order_id) }}{% else %}{{ url_for('orders_create_post') }}{% endif %}">
+
+    <div class="row">
+      <div class="col mb-2">
+        <label class="form-label">重量 (kg)</label>
+        <input class="form-control" name="weight" type="number" min="0.01" step="0.01" required
+               value="{{ order.weight if order else '' }}">
+      </div>
+      <div class="col mb-2">
+        <label class="form-label">体积 (m³)</label>
+        <input class="form-control" name="volume" type="number" min="0.01" step="0.01" required
+               value="{{ order.volume if order else '' }}">
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">目的地</label>
+      <input class="form-control" name="destination" required
+             value="{{ order.destination if order else '' }}">
+    </div>
+
+    <div class="row">
+      <div class="col mb-2">
+        <label class="form-label">车辆（可为空）</label>
+        <select class="form-select" name="vehicle_id">
+          <option value="">none</option>
+          {% for v in vehicles %}
+            <option value="{{ v.vehicle_id }}"
+              {% if order and order.vehicle_id == v.vehicle_id %}selected{% endif %}>
+              {{ v.vehicle_id }} - {{ v.license_plate_number }}（{{ v.status }}，最大载重={{ v.max_weight }}）
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col mb-2">
+        <label class="form-label">司机（可为空）</label>
+        <select class="form-select" name="driver_id">
+          <option value="">none</option>
+          {% for d in drivers %}
+            <option value="{{ d.driver_id }}"
+              {% if order and order.driver_id == d.driver_id %}selected{% endif %}>
+              {{ d.driver_id }} - {{ d.name }}（{{ d.license_level }}）
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">运单状态</label>
+      <select class="form-select" name="status">
+        {% set cur_status = order.status if order else '待分配' %}
+        {% for s in ['待分配','运输中','已完成','异常'] %}
+          <option value="{{ s }}" {% if cur_status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <div class="text-muted small mt-1">
+        说明：如果车辆和司机都已填写，系统可自动将状态置为“运输中”；若车辆/司机任一为空，建议为“待分配”。
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+      <button class="btn btn-primary" type="submit">
+        {% if mode == 'edit' %}保存修改{% else %}创建运单{% endif %}
+      </button>
+      <a class="btn btn-secondary" href="{{ url_for('orders_list') }}">取消</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

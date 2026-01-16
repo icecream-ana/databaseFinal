@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>审计日志（history_log）</h4>
+<table class="table table-striped mt-2">
+  <thead><tr><th>ID</th><th>修改表</th><th>记录ID</th><th>操作类型</th><th>时间</th><th>旧数据</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.log_id }}</td>
+        <td>{{ r.table_name }}</td>
+        <td>{{ r.change_id }}</td>
+        <td>{{ r.operation_type }}</td>
+        <td>{{ r.change_at }}</td>
+        <td>{{ r.old_data }}</pre></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

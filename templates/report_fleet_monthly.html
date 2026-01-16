@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>车队月报</h4>
+
+<form method="get" class="row g-2 align-items-end">
+  <div class="col-md-3">
+    <label class="form-label">车队ID</label>
+    <input class="form-control" name="fleet_id" value="{{ fleet_id }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">年份</label>
+    <input class="form-control" name="year" value="{{ year }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">月份</label>
+    <input class="form-control" name="month" value="{{ month }}">
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary" type="submit">查询</button>
+  </div>
+</form>
+
+{% if report %}
+  <div class="card p-3 mt-3">
+    <div>总运单数：<b>{{ report.total_orders }}</b></div>
+    <div>异常总数：<b>{{ report.total_exceptions }}</b></div>
+    <div>罚款总额：<b>{{ report.total_fines }}</b></div>
+  </div>
+{% endif %}
+{% endblock %}

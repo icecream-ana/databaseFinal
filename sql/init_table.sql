@@ -62,7 +62,7 @@ CREATE TABLE drivers (
     FOREIGN KEY (fleet_id) REFERENCES fleets(fleet_id),
     -- 外键约束：司机隶属于某个车队
 
-    CHECK (license_level IN ('C1','C2','B2','A2'))
+    CHECK (license_level IN ('A2','B2','C1','C2'))
     -- 驾照等级约束
 );
 
@@ -90,8 +90,8 @@ CREATE TABLE orders (
     destination NVARCHAR(255) NOT NULL,          -- 目的地
     created_at DATETIME NOT NULL DEFAULT GETDATE(), 
                                                   -- 运单创建时间
-    vehicle_id INT NOT NULL,                     -- 执行车辆ID（外键）
-    driver_id INT NOT NULL,                      -- 执行司机ID（外键）
+    vehicle_id INT NULL,                     -- 执行车辆ID（外键，允许为空，表示待分配）
+    driver_id INT NULL,                      -- 执行司机ID（外键，允许为空，表示待分配）
     status NVARCHAR(20) NOT NULL DEFAULT N'待分配',
                                                   -- 运单状态
 

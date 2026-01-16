@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>运单详情 #{{ order.order_id }}</h4>
+
+<div class="card p-3">
+  <div>创建时间：{{ order.created_at }}</div>
+  <div>目的地：{{ order.destination }}</div>
+  <div>重量/体积：{{ order.weight }} / {{ order.volume }}</div>
+  <div>车辆：{{ order.license_plate_number }}（车辆状态：{{ order.vehicle_status }}）</div>
+  <div>司机：{{ order.driver_name }}（ID {{ order.driver_id }}）</div>
+  <div>运单状态：<b>{{ order.status }}</b></div>
+</div>
+
+<div class="card p-3 mt-3">
+  <h6>关联异常</h6>
+  <table class="table table-sm">
+    <thead><tr><th>ID</th><th>发生时间</th><th>类型</th><th>状态</th><th>罚款</th><th></th></tr></thead>
+    <tbody>
+      {% for e in exceptions %}
+        <tr>
+          <td>{{ e.event_id }}</td>
+          <td>{{ e.occurred_time }}</td>
+          <td>{{ e.exception_type }}</td>
+          <td>{{ e.status }}</td>
+          <td>{{ e.fine_amount }}</td>
+          <td><a href="{{ url_for('exception_detail', event_id=e.event_id) }}">详情</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

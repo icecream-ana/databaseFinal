@@ -1,4 +1,7 @@
-﻿-- 运单表：时间过滤 + 司机/车辆统计
+﻿USE FleetDB
+GO
+
+-- 运单表：时间过滤 + 司机/车辆统计
 CREATE INDEX IX_orders_created_at
 ON orders(created_at);
 

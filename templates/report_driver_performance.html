@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>司机绩效</h4>
+
+<form method="get" class="card p-3">
+  {% if user.role == 'supervisor' %}
+    <div class="mb-2">
+      <label class="form-label">选择司机</label>
+      <select class="form-select" name="driver_id" required>
+        <option value="">请选择</option>
+        {% for d in drivers %}
+          <option value="{{ d.driver_id }}" {% if driver_id and (driver_id|int)==d.driver_id %}selected{% endif %}>
+            {{ d.driver_id }} - {{ d.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  {% else %}
+    <div class="mb-2 text-muted">司机模式：已锁定本人（ID {{ user.driver_id }}）</div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col mb-2">
+      <label class="form-label">开始日期</label>
+      <input class="form-control" type="date" name="start"
+            value="{{ start }}">
+    </div>
+    <div class="col mb-2">
+      <label class="form-label">结束日期</label>
+      <input class="form-control" type="date" name="end"
+            value="{{ end }}">
+    </div>
+  </div>
+
+  <button class="btn btn-primary" type="submit">查询</button>
+</form>
+
+{% if summary %}
+  <div class="card p-3 mt-3">
+    <h6>汇总</h6>
+    <div>运单数量：<b>{{ summary.total_orders }}</b></div>
+  </div>
+
+  <div class="card p-3 mt-3">
+    <h6>异常明细</h6>
+    <table class="table table-sm">
+      <thead><tr><th>异常ID</th><th>发生时间</th><th>类型</th><th>状态</th><th>罚款</th><th>运单ID</th><th>车牌</th></tr></thead>
+      <tbody>
+        {% for r in details %}
+          <tr>
+            <td>{{ r.event_id }}</td>
+            <td>{{ r.occurred_time }}</td>
+            <td>{{ r.exception_type }}</td>
+            <td>{{ r.exception_status }}</td>
+            <td>{{ r.fine_amount }}</td>
+            <td>{{ r.order_id }}</td>
+            <td>{{ r.license_plate_number }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

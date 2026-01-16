@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>主页</h4>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="text-muted">近7天异常数</div>
+      <div class="fs-3">{{ kpis.weekly_exception_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="text-muted">30天预警对象数</div>
+      <div class="fs-3">{{ kpis.abnormal_pair_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="text-muted">异常车辆数</div>
+      <div class="fs-3">{{ kpis.vehicles_abnormal }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="text-muted">运输中车辆数</div>
+      <div class="fs-3">{{ kpis.vehicles_in_transit }}</div>
+    </div>
+  </div>
+</div>
+
+{% if user.role == 'supervisor' and kpis.fleet_month_report %}
+  <div class="card p-3 mt-3">
+    <h6>本月车队月报（车队 {{ user.fleet_id }}）</h6>
+    <div class="row">
+      <div class="col">运单总数：<b>{{ kpis.fleet_month_report.total_orders }}</b></div>
+      <div class="col">异常总数：<b>{{ kpis.fleet_month_report.total_exceptions }}</b></div>
+      <div class="col">罚款总额：<b>{{ kpis.fleet_month_report.total_fines }}</b></div>
+    </div>
+  </div>
+{% endif %}
+
+{% if user.role == 'driver' %}
+  <div class="card p-3 mt-3">
+    <h6>本月我的概览</h6>
+    <div>运单数：<b>{{ kpis.driver_month_orders }}</b>；异常数：<b>{{ kpis.driver_month_exceptions }}</b></div>
+  </div>
+{% endif %}
+
+<div class="row mt-3 g-3">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6>近7天异常告警（预览）</h6>
+      <table class="table table-sm">
+        <thead><tr><th>时间</th><th>类型</th><th>车牌</th><th>状态</th></tr></thead>
+        <tbody>
+        {% for r in weekly_exceptions %}
+          <tr>
+            <td>{{ r.occurred_time }}</td>
+            <td>{{ r.exception_type }}</td>
+            <td>{{ r.license_plate_number }}</td>
+            <td>{{ r.exception_status }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% if user.role=='supervisor' %}
+        <a href="{{ url_for('alerts_weekly_exceptions') }}">查看全部</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h6>异常司机/车辆预警（预览）</h6>
+      <table class="table table-sm">
+        <thead><tr><th>司机</th><th>车牌</th><th>次数</th><th>原因</th></tr></thead>
+        <tbody>
+        {% for r in abnormal_pairs %}
+          <tr>
+            <td>{{ r.driver_name }}</td>
+            <td>{{ r.license_plate_number }}</td>
+            <td>{{ r.exception_count_30d }}</td>
+            <td>{{ r.warning_reason }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% if user.role=='supervisor' %}
+        <a href="{{ url_for('alerts_abnormal_pairs') }}">查看全部</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

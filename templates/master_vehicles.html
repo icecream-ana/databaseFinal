@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4>车辆管理（车队 {{ user.fleet_id }}）</h4>
+  <a class="btn btn-sm btn-primary" href="{{ url_for('master_vehicle_new') }}">新增车辆</a>
+</div>
+
+<table class="table table-striped mt-2">
+  <thead>
+    <tr>
+      <th>ID</th><th>车牌</th><th>最大载重</th><th>最大容积</th><th>状态</th><th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in vehicles %}
+      <tr>
+        <td>{{ v.vehicle_id }}</td>
+        <td>{{ v.license_plate_number }}</td>
+        <td>{{ v.max_weight }}</td>
+        <td>{{ v.max_volume }}</td>
+        <td>{{ v.status }}</td>
+        <td>
+          <a href="{{ url_for('master_vehicle_edit', vehicle_id=v.vehicle_id) }}">编辑</a>
+
+          <form method="post"
+                action="{{ url_for('master_vehicle_delete_post', vehicle_id=v.vehicle_id) }}"
+                style="display:inline;"
+                onsubmit="return confirm('确认删除该车辆吗？删除后不可恢复。');">
+            <button type="submit" class="btn btn-link p-0 ms-2">删除</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
