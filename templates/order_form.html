@@ -63,18 +63,27 @@
       </div>
     </div>
 
-    <div class="mb-2">
-      <label class="form-label">运单状态</label>
-      <select class="form-select" name="status">
-        {% set cur_status = order.status if order else '待分配' %}
-        {% for s in ['待分配','运输中','已完成','异常'] %}
-          <option value="{{ s }}" {% if cur_status == s %}selected{% endif %}>{{ s }}</option>
-        {% endfor %}
-      </select>
-      <div class="text-muted small mt-1">
-        说明：如果车辆和司机都已填写，系统可自动将状态置为“运输中”；若车辆/司机任一为空，建议为“待分配”。
+    {% if mode == 'edit' %}
+      <div class="mb-2">
+        <label class="form-label">运单状态</label>
+        <select class="form-select" name="status">
+          {% set cur_status = order.status %}
+          {% for s in ['待分配','运输中','已完成','异常'] %}
+            <option value="{{ s }}" {% if cur_status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <div class="text-muted small mt-1">
+          说明：未分配车辆和司机的运单状态必须为待分配
+        </div>
       </div>
-    </div>
+    {% else %}
+      <!-- 新建运单：状态固定为待分配 -->
+      <input type="hidden" name="status" value="待分配">
+      <div class="text-muted small mt-1">
+        说明：新建运单状态为待分配，请点击运单列表中目标订单右侧的【修改/分配】按钮改变状态
+      </div>
+    {% endif %}
+
 
     <div class="mt-3 d-flex gap-2">
       <button class="btn btn-primary" type="submit">

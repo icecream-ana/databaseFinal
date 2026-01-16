@@ -1,20 +1,125 @@
 {% extends "base.html" %}
 {% block content %}
-<h4>近7天异常告警（车队 {{ user.fleet_id }}）</h4>
-<table class="table table-striped mt-2">
-  <thead><tr><th>时间</th><th>类型</th><th>状态</th><th>罚款</th><th>车牌</th><th>司机</th><th>目的地</th></tr></thead>
-  <tbody>
-    {% for r in rows %}
-      <tr>
-        <td>{{ r.occurred_time }}</td>
-        <td>{{ r.exception_type }}</td>
-        <td>{{ r.exception_status }}</td>
-        <td>{{ r.fine_amount }}</td>
-        <td>{{ r.license_plate_number }}</td>
-        <td>{{ r.driver_name }}</td>
-        <td>{{ r.destination }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="mb-0">本周异常告警（车队 {{ user.fleet_id }}）</h4>
+</div>
+
+<form method="get" class="card p-3 mt-3">
+  <!-- 第一行：状态 / 类型 / 罚款 -->
+  <div class="row align-items-end">
+    <div class="col-md-3 mb-2">
+      <label class="form-label">异常状态</label>
+      <select class="form-select" name="status">
+        <option value="all" {% if status=='all' %}selected{% endif %}>全部</option>
+        {% for s in ['待处理','处理中','已处理'] %}
+          <option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <label class="form-label">异常类型</label>
+      <select class="form-select" name="type">
+        <option value="all" {% if ex_type=='all' %}selected{% endif %}>全部</option>
+        {% for t in ['运输时异常','空闲时异常'] %}
+          <option value="{{ t }}" {% if ex_type==t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 mb-2">
+      <label class="form-label">最低罚款</label>
+      <input class="form-control" type="number" name="min_fine" min="0" value="{{ min_fine }}">
+    </div>
+  </div>
+
+  <!-- 第二行：时间 + 关键词 -->
+  <div class="row align-items-end mt-2">
+    <div class="col-md-3 mb-2">
+      <label class="form-label">开始日期</label>
+      <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <label class="form-label">结束日期</label>
+      <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+    </div>
+
+    <div class="col-md-4 mb-2">
+      <label class="form-label">关键词</label>
+      <input class="form-control" name="q"
+             placeholder="司机 / 车牌 / 运单ID / 异常ID / 目的地"
+             value="{{ q }}">
+    </div>
+
+    <div class="col-md-2 mb-2">
+      <button class="btn btn-primary w-100" type="submit">筛选</button>
+    </div>
+  </div>
+</form>
+
+<!-- 统计卡片 -->
+<div class="row mt-3">
+  <div class="col-md-4 mb-2">
+    <div class="card p-3">
+      <div class="text-muted small">异常总数</div>
+      <div class="fs-4"><b>{{ total }}</b></div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card p-3">
+      <div class="text-muted small">总罚款金额</div>
+      <div class="fs-4"><b>{{ total_fine }}</b></div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card p-3">
+      <div class="text-muted small">状态分布</div>
+      <div class="small mt-1">
+        待处理：<b>{{ by_status['待处理'] }}</b> |
+        处理中：<b>{{ by_status['处理中'] }}</b> |
+        已处理：<b>{{ by_status['已处理'] }}</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 异常列表 -->
+<div class="card mt-3">
+  <div class="card-body">
+    <h6>异常列表</h6>
+    <table class="table table-striped table-hover align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>发生时间</th>
+          <th>类型</th>
+          <th>状态</th>
+          <th>罚款</th>
+          <th>车牌</th>
+          <th>司机</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>#{{ r.event_id }}</td>
+            <td>{{ r.occurred_time }}</td>
+            <td>{{ r.exception_type }}</td>
+            <td>{{ r.exception_status }}</td>
+            <td>{{ r.fine_amount }}</td>
+            <td>{{ r.license_plate_number }}</td>
+            <td>{{ r.driver_name }}（{{ r.driver_id }}）</td>
+            <td>
+              <a href="{{ url_for('alerts_weekly_exception_detail', event_id=r.event_id) }}">详情</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 {% endblock %}

@@ -73,7 +73,7 @@
           <a href="{{ url_for('order_detail', order_id=o.order_id) }}">详情</a>
 
           {% if user.role == 'supervisor' %}
-            | <a href="{{ url_for('order_edit', order_id=o.order_id) }}">修改</a>
+            | <a href="{{ url_for('order_edit', order_id=o.order_id) }}">修改/分配</a>
           {% endif %}
         </td>
       </tr>

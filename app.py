@@ -1193,21 +1193,128 @@ def report_fleet_monthly():
 # ----------------------------
 # Alerts (views)
 # ----------------------------
+from datetime import datetime, timedelta
+
 @app.get("/alerts/weekly-exceptions")
 @login_required
 @role_required(ROLE_SUPERVISOR)
 def alerts_weekly_exceptions():
     user = current_user()
+
+    status = request.args.get("status", "all").strip()
+    ex_type = request.args.get("type", "all").strip()
+    q = request.args.get("q", "").strip()
+    min_fine_raw = request.args.get("min_fine", "").strip()
+
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+
+    where = ["fleet_id=%s"]
+    params = [user["fleet_id"]]
+
+    if status != "all":
+        where.append("exception_status=%s")
+        params.append(status)
+
+    if ex_type != "all":
+        where.append("exception_type=%s")
+        params.append(ex_type)
+
+    # 时间范围（按“日”）
+    if start_date:
+        where.append("occurred_time >= %s")
+        params.append(start_date + " 00:00:00")
+
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+        where.append("occurred_time < %s")
+        params.append(end_dt.strftime("%Y-%m-%d 00:00:00"))
+
+    # 最低罚款
+    if min_fine_raw:
+        try:
+            min_fine = max(int(min_fine_raw), 0)
+            where.append("fine_amount >= %s")
+            params.append(min_fine)
+        except:
+            min_fine = 0
+    else:
+        min_fine = 0
+
+    # 关键词
+    if q:
+        where.append("""
+            (
+                CAST(event_id AS NVARCHAR(50)) LIKE %s OR
+                CAST(order_id AS NVARCHAR(50)) LIKE %s OR
+                destination LIKE %s OR
+                driver_name LIKE %s OR
+                license_plate_number LIKE %s
+            )
+        """)
+        like = f"%{q}%"
+        params.extend([like] * 5)
+
+    where_sql = " AND ".join(where)
+
     rows = db.fetch_all(
+        f"""
+        SELECT *
+        FROM dbo.vw_weekly_exception_alert
+        WHERE {where_sql}
+        ORDER BY occurred_time DESC
+        """,
+        tuple(params)
+    )
+
+    total = len(rows)
+    total_fine = sum(r.get("fine_amount") or 0 for r in rows)
+    by_status = {"待处理": 0, "处理中": 0, "已处理": 0}
+    for r in rows:
+        if r["exception_status"] in by_status:
+            by_status[r["exception_status"]] += 1
+
+    return render_template(
+        "alerts_weekly_exceptions.html",
+        user=user,
+        rows=rows,
+        status=status,
+        ex_type=ex_type,
+        q=q,
+        min_fine=min_fine,
+        start_date=start_date,
+        end_date=end_date,
+        total=total,
+        total_fine=total_fine,
+        by_status=by_status,
+    )
+
+
+
+@app.get("/alerts/weekly-exceptions/<int:event_id>")
+@login_required
+@role_required(ROLE_SUPERVISOR)
+def alerts_weekly_exception_detail(event_id):
+    user = current_user()
+
+    r = db.fetch_one(
         """
         SELECT *
         FROM dbo.vw_weekly_exception_alert
-        WHERE fleet_id=%s
-        ORDER BY occurred_time DESC
+        WHERE event_id=%s AND fleet_id=%s
         """,
-        (user["fleet_id"],)
+        (event_id, user["fleet_id"])
     )
-    return render_template("alerts_weekly_exceptions.html", user=user, rows=rows)
+    if not r:
+        flash("异常记录不存在或无权限查看。", "error")
+        return redirect(url_for("alerts_weekly_exceptions"))
+
+    return render_template(
+        "alerts_weekly_exception_detail.html",
+        user=user,
+        r=r
+    )
+
 
 @app.get("/alerts/abnormal-pairs")
 @login_required

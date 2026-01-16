@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center">
+  <div>
+    <h4 class="mb-0">异常详情（#{{ r.event_id }}）</h4>
+    <div class="text-muted small mt-1">
+    </div>
+  </div>
+
+  <a class="btn btn-sm btn-secondary" href="{{ url_for('alerts_weekly_exceptions') }}">返回列表</a>
+</div>
+
+<div class="row mt-3">
+  <div class="col-md-6 mb-3">
+    <div class="card p-3">
+      <h6 class="mb-2">异常信息</h6>
+      <div>异常ID：<b>#{{ r.event_id }}</b></div>
+      <div>发生时间：{{ r.occurred_time }}</div>
+      <div>异常类型：{{ r.exception_type }}</div>
+      <div>处理状态：{{ r.exception_status }}</div>
+      <div>罚款金额：<b>{{ r.fine_amount }}</b></div>
+      <div class="mt-2">
+        <div class="text-muted small">异常描述</div>
+        <div class="border rounded p-2 bg-light">{{ r.description }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 mb-3">
+    <div class="card p-3">
+      <h6 class="mb-2">运单信息</h6>
+      <div>运单ID：<b>#{{ r.order_id }}</b></div>
+      <div>创建时间：{{ r.created_at }}</div>
+      <div>目的地：{{ r.destination }}</div>
+      <div>运单状态：<b>{{ r.order_status }}</b></div>
+    </div>
+
+    <div class="card p-3 mt-3">
+      <h6 class="mb-2">车辆信息</h6>
+      <div>车辆ID：{{ r.vehicle_id }}</div>
+      <div>车牌号：<b>{{ r.license_plate_number }}</b></div>
+      <div>车辆状态：<b>{{ r.vehicle_status }}</b></div>
+    </div>
+
+    <div class="card p-3 mt-3">
+      <h6 class="mb-2">司机信息</h6>
+      <div>司机ID：{{ r.driver_id }}</div>
+      <div>姓名：<b>{{ r.driver_name }}</b></div>
+      <div>联系方式：{{ r.driver_phone }}</div>
+      <div>驾照等级：{{ r.license_level }}</div>
+    </div>
+
+    <div class="card p-3 mt-3">
+      <h6 class="mb-2">组织信息</h6>
+      <div>车队：{{ r.fleet_name }}（{{ r.fleet_id }}）</div>
+      <div>配送中心：{{ r.center_name }}（{{ r.center_id }}）</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
