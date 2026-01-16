@@ -37,7 +37,7 @@ BEGIN
 END;
 GO
 
--- Trigger 2: 车辆状态自动流转
+-- Trigger 2: 车辆/运单状态自动流转
 -- A. 运单完成 -> 车辆空闲
 -- B. 异常处理完成 -> 车辆恢复
 CREATE OR ALTER TRIGGER trg_vehicle_status_auto_update
@@ -88,6 +88,32 @@ BEGIN
 END;
 GO
 
+-- 针对异常表发生的 Trigger (Trigger 2 Part C: 异常发生)
+-- 当异常发生时，对应运单和车辆状态变为“异常”
+CREATE OR ALTER TRIGGER trg_exception_occurred_vehicle_status
+ON exception_events
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. 更新运单状态为“异常”
+    UPDATE o
+    SET status = N'异常'
+    FROM orders o
+    JOIN inserted i ON o.order_id = i.order_id
+    WHERE o.status <> N'异常';
+
+    -- 2. 更新车辆状态为“异常”
+    UPDATE v
+    SET status = N'异常'
+    FROM vehicles v
+    JOIN orders o ON v.vehicle_id = o.vehicle_id
+    JOIN inserted i ON o.order_id = i.order_id
+    WHERE v.status <> N'异常';
+END;
+GO
+
 -- 针对异常表处理的 Trigger (Trigger 2 Part B)
 CREATE OR ALTER TRIGGER trg_exception_handled_vehicle_status
 ON exception_events
@@ -102,13 +128,22 @@ BEGIN
         -- 查找本次变为“已处理”的记录
         SELECT 
             i.exception_type,
-            o.vehicle_id
+            o.vehicle_id,
+            i.order_id
         INTO #HandledExceptions
         FROM inserted i
         JOIN deleted d ON i.event_id = d.event_id
         JOIN orders o ON i.order_id = o.order_id
         WHERE i.status = N'已处理' AND d.status <> N'已处理'; -- 状态流转检测
         
+        -- 更新运单状态：只要异常被处理，且运单当前是“异常”状态，均恢复为“运输中”
+        -- (注：空闲时异常通常不关联运输中运单，但如果有关联则同样处理)
+        UPDATE o
+        SET status = N'运输中'
+        FROM orders o
+        JOIN #HandledExceptions he ON o.order_id = he.order_id
+        WHERE o.status = N'异常';
+
         -- 更新车辆状态
         -- 1. 运输时异常 -> 恢复为“运输中” (假设任务继续) 或 “空闲” (如果没有任务)
         --    题目说：取决于异常类型。此处简化逻辑：
