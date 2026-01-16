@@ -189,11 +189,13 @@ UPDATE exception_events SET status = N'已处理' WHERE event_id = @EventID;
 DECLARE @NewStatus NVARCHAR(50);
 SELECT @NewStatus = status FROM vehicles WHERE vehicle_id = @VehicleID;
 
--- 预期：运输时异常处理后，车辆恢复为“运输中”（因为属于运输过程中的恢复）
-IF @NewStatus = N'运输中'
+-- 预期：运输时异常处理后，车辆恢复为“运输中”，运单恢复为“运输中”
+DECLARE @NewOrderStatus NVARCHAR(50) = (SELECT status FROM orders WHERE order_id = @OrderId);
+
+IF @NewStatus = N'运输中' AND @NewOrderStatus = N'运输中'
     PRINT 'Test 2.3 [运输异常处理 -> 恢复运输]: 成功 (PASSED)';
 ELSE
-    PRINT 'Test 2.3 [运输异常处理 -> 恢复运输]: 失败, 当前状态: ' + @NewStatus + ' (FAILED)';
+    PRINT 'Test 2.3 [运输异常处理 -> 恢复运输]: 失败, 车辆状态: ' + @NewStatus + ', 运单状态: ' + @NewOrderStatus + ' (FAILED)';
 GO
 
 -- ============================================================
