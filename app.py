@@ -698,7 +698,7 @@ def orders_create_post():
 
     except Exception as e:
         if is_overload_trigger_error(e):
-            flash("分配失败：车辆超载")
+            flash("分配失败：车辆超载（触发器校验）。", "error")
         else:
             code, msg = mssql_error_code_and_message(e)
             flash(f"分配失败：{msg or e}", "error")
@@ -829,7 +829,7 @@ def order_edit_post(order_id):
 
     except Exception as e:
         if is_overload_trigger_error(e):
-            flash("更新失败：车辆超载。")
+            flash("更新失败：车辆超载（触发器校验）。", "error")
         else:
             code, msg = mssql_error_code_and_message(e)
             flash(f"更新失败：{msg or e}", "error")
@@ -1185,23 +1185,39 @@ def report_driver_performance():
 @role_required(ROLE_SUPERVISOR)
 def report_fleet_monthly():
     user = current_user()
-    fleet_id = int(request.args.get("fleet_id") or user["fleet_id"])
-    year = int(request.args.get("year") or date.today().year)
-    month = int(request.args.get("month") or date.today().month)
 
-    if not supervisor_fleet_guard(fleet_id):
-        flash("只能查询自己监管的车队月报。", "error")
-        fleet_id = user["fleet_id"]
+    # 1) 读取月份（YYYY-MM），默认当前月
+    ym = request.args.get("ym", "").strip()
+    if not ym:
+        ym = datetime.now().strftime("%Y-%m")
 
-    report = db.call_proc_sp_fleet_monthly_report(fleet_id, year, month)
+    try:
+        year_str, month_str = ym.split("-")
+        year = int(year_str)
+        month = int(month_str)
+        if month < 1 or month > 12:
+            raise ValueError("month out of range")
+    except Exception:
+        flash("月份格式不正确，请选择有效月份。", "error")
+        return redirect(url_for("report_fleet_monthly"))
+
+    # 2) 调用存储过程
+    try:
+        # 你需要在 db.py 里实现 call_proc_sp_fleet_monthly_report（下面给）
+        row = db.call_proc_sp_fleet_monthly_report(user["fleet_id"], year, month)
+    except Exception as e:
+        code, msg = mssql_error_code_and_message(e)
+        flash(f"生成报告失败：{msg or e}", "error")
+        return redirect(url_for("report_fleet_monthly"))
+
+    # row 可能为 None（该月无订单会导致 fleet_orders 为空，最终 SELECT 无行）
     return render_template(
         "report_fleet_monthly.html",
         user=user,
-        fleet_id=fleet_id,
-        year=year,
-        month=month,
-        report=report
+        ym=ym,
+        report=row
     )
+
 
 # ----------------------------
 # Alerts (views)

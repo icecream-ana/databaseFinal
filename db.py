@@ -53,8 +53,12 @@ def call_proc_sp_driver_performance(driver_id: int, start_dt: str, end_dt: str):
         return summary, rs2
 
 def call_proc_sp_fleet_monthly_report(fleet_id: int, year: int, month: int):
-    with get_conn() as conn:
+    conn = get_conn()
+    try:
         cur = conn.cursor(as_dict=True)
         cur.execute("EXEC dbo.sp_fleet_monthly_report %s, %s, %s", (fleet_id, year, month))
         row = cur.fetchone()
+        conn.commit()
         return row
+    finally:
+        conn.close()

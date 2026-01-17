@@ -5,7 +5,16 @@
 <form method="post">
   <div class="mb-2">
     <label class="form-label">车牌号</label>
-    <input class="form-control" name="license_plate_number" required value="{{ vehicle.license_plate_number if vehicle else '' }}">
+    <input class="form-control"
+           name="license_plate_number"
+           maxlength="7"
+           pattern="^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼][A-Z][A-Z0-9]{5}$"
+           placeholder="沪A12345"
+           title="示例：沪A12345（省份简称 + 字母 + 5 位）"
+           style="text-transform:uppercase"
+           required
+           value="{{ vehicle.license_plate_number if vehicle else '' }}">
+    <div class="form-text">格式示例：沪A12345 / 粤B67890（普通蓝牌）</div>
   </div>
 
   <div class="row">

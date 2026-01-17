@@ -1,30 +1,158 @@
 {% extends "base.html" %}
 {% block content %}
-<h4>车队月报</h4>
 
-<form method="get" class="row g-2 align-items-end">
-  <div class="col-md-3">
-    <label class="form-label">车队ID</label>
-    <input class="form-control" name="fleet_id" value="{{ fleet_id }}">
+<div class="d-flex justify-content-between align-items-center">
+  <div>
+    <h4 class="mb-0">车队月度报告（车队 {{ user.fleet_id }}）</h4>
   </div>
-  <div class="col-md-3">
-    <label class="form-label">年份</label>
-    <input class="form-control" name="year" value="{{ year }}">
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">月份</label>
-    <input class="form-control" name="month" value="{{ month }}">
-  </div>
-  <div class="col-md-2">
-    <button class="btn btn-primary" type="submit">查询</button>
+</div>
+
+<form method="get" class="card p-3 mt-3">
+  <div class="row align-items-end">
+    <div class="col-md-3 mb-2">
+      <label class="form-label">选择月份</label>
+      <input class="form-control" type="month" name="ym" value="{{ ym }}" required>
+    </div>
+    <div class="col-md-2 mb-2">
+      <button class="btn btn-primary w-100" type="submit">生成报告</button>
+    </div>
   </div>
 </form>
 
 {% if report %}
-  <div class="card p-3 mt-3">
-    <div>总运单数：<b>{{ report.total_orders }}</b></div>
-    <div>异常总数：<b>{{ report.total_exceptions }}</b></div>
-    <div>罚款总额：<b>{{ report.total_fines }}</b></div>
+  <!-- ============== KPI 卡片区 ============== -->
+  <div class="row mt-3">
+    <div class="col-md-3 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">运单总数</div>
+        <div class="fs-4"><b>{{ report.total_orders }}</b></div>
+        <div class="text-muted small">待分配 {{ report.orders_pending }} / 运输中 {{ report.orders_in_transit }}</div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">异常事件总数</div>
+        <div class="fs-4"><b>{{ report.total_exceptions }}</b></div>
+        <div class="text-muted small">待处理异常 {{ report.pending_exceptions }}</div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">罚款总额</div>
+        <div class="fs-4"><b>{{ report.total_fines }}</b></div>
+        <div class="text-muted small">单次异常均罚 {{ report.avg_fine_per_exception }}</div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">完成率 / 异常率</div>
+        <div class="fs-5">
+          完成率：<b>{{ (report.completion_rate * 100) | round(2) }}%</b>
+        </div>
+        <div class="text-muted small">
+          异常单率：{{ (report.abnormal_order_rate * 100) | round(2) }}% |
+          异常事件率：{{ (report.abnormal_event_rate * 100) | round(2) }}%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== 规模与利用 ============== -->
+  <div class="row mt-1">
+    <div class="col-md-4 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">货量规模</div>
+        <div>总重量：<b>{{ report.total_weight }}</b> kg</div>
+        <div>总容积：<b>{{ report.total_volume }}</b> m³</div>
+        <div class="text-muted small mt-1">
+          均重 {{ report.avg_weight }} / 最大 {{ report.max_weight }} / 最小 {{ report.min_weight }}
+        </div>
+        <div class="text-muted small">
+          均容 {{ report.avg_volume }} / 最大 {{ report.max_volume }} / 最小 {{ report.min_volume }}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">车辆利用</div>
+        <div>活跃车辆数：<b>{{ report.active_vehicles }}</b></div>
+        <div>空闲车辆数：<b>{{ report.idle_vehicles }}</b></div>
+        <div class="text-muted small mt-1">
+          活跃车均运单：<b>{{ report.orders_per_active_vehicle }}</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4 mb-2">
+      <div class="card p-3">
+        <div class="text-muted small">司机绩效（车队维度）</div>
+        <div>参与司机数：<b>{{ report.active_drivers }}</b></div>
+        <div class="text-muted small mt-1">
+          人均运单：<b>{{ report.orders_per_active_driver }}</b>
+        </div>
+        <div class="text-muted small">
+          已完成 {{ report.orders_completed }} / 异常单 {{ report.orders_abnormal }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== 明细字段表（完整展示） ============== -->
+  <div class="card mt-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">报告明细字段</h6>
+        <div class="text-muted small">{{ report.year }}-{{ "%02d"|format(report.month) }}</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+          <tbody>
+            <tr><th style="width:240px;">运单总数</th><td>{{ report.total_orders }}</td></tr>
+            <tr><th>异常事件总数</th><td>{{ report.total_exceptions }}</td></tr>
+            <tr><th>罚款总额</th><td>{{ report.total_fines }}</td></tr>
+
+            <tr><th>待分配 / 运输中 / 已完成 / 异常（运单数）</th>
+              <td>
+                {{ report.orders_pending }} / {{ report.orders_in_transit }} / {{ report.orders_completed }} / {{ report.orders_abnormal }}
+              </td>
+            </tr>
+
+            <tr><th>完成率</th><td>{{ report.completion_rate }}</td></tr>
+            <tr><th>异常单率（异常运单/总运单）</th><td>{{ report.abnormal_order_rate }}</td></tr>
+            <tr><th>异常事件率（异常事件/总运单）</th><td>{{ report.abnormal_event_rate }}</td></tr>
+
+            <tr><th>总重量 / 总容积</th><td>{{ report.total_weight }} kg / {{ report.total_volume }} m³</td></tr>
+            <tr><th>平均重量 / 平均容积</th><td>{{ report.avg_weight }} / {{ report.avg_volume }}</td></tr>
+            <tr><th>最大重量 / 最小重量</th><td>{{ report.max_weight }} / {{ report.min_weight }}</td></tr>
+            <tr><th>最大容积 / 最小容积</th><td>{{ report.max_volume }} / {{ report.min_volume }}</td></tr>
+
+            <tr><th>活跃车辆数 / 空闲车辆数</th><td>{{ report.active_vehicles }} / {{ report.idle_vehicles }}</td></tr>
+            <tr><th>活跃车均运单</th><td>{{ report.orders_per_active_vehicle }}</td></tr>
+
+            <tr><th>参与司机数</th><td>{{ report.active_drivers }}</td></tr>
+            <tr><th>人均运单</th><td>{{ report.orders_per_active_driver }}</td></tr>
+
+            <tr><th>待处理异常数</th><td>{{ report.pending_exceptions }}</td></tr>
+            <tr><th>单次异常平均罚款</th><td>{{ report.avg_fine_per_exception }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-muted small">
+        说明：当月无任何运单时，存储过程可能返回空结果（本页会提示“无数据”）。
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  <div class="alert alert-secondary mt-3">
+    该月份暂无数据（可能当月没有任何关联本车队车辆的运单）。
   </div>
 {% endif %}
+
 {% endblock %}
