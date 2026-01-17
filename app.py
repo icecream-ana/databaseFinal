@@ -1,5 +1,3 @@
-# Flask 入口
-
 import os
 from datetime import datetime, date
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -69,6 +67,11 @@ def mssql_error_code_and_message(e: Exception):
         msg = str(e)
 
     return code, msg
+
+# 是否是车牌不唯一错误
+def is_plates_error(e: Exception) -> bool:
+    code, msg = mssql_error_code_and_message(e)
+    return code == 2627
 
 # 是否是触发器超载错误
 def is_overload_trigger_error(e: Exception) -> bool:
@@ -300,7 +303,7 @@ def master_vehicle_new_post():
         flash("车辆创建成功。", "success")
         return redirect(url_for("master_vehicles"))
     except Exception as e:
-        flash(f"创建失败：{e}", "error")
+        flash(f"创建失败：车牌重复", )
         return redirect(url_for("master_vehicle_new"))
 
 
@@ -470,7 +473,16 @@ def master_driver_edit_post(driver_id):
         # 联系方式校验
         if not validate_phone(phone):
             flash("联系方式格式不合法，请输入 11 位手机号（如 138xxxxxxxx）。", "error")
-            return redirect(url_for("master_driver_new"))
+            # 用表单数据覆盖原 driver
+            d["name"] = name
+            d["license_level"] = license_level
+            d["phone"] = phone
+
+            return render_template(
+                "master_driver_form.html",
+                user=user,
+                driver=d
+            )
         
         db.execute(
             "UPDATE drivers SET name=%s, license_level=%s, phone=%s WHERE driver_id=%s",
@@ -518,8 +530,6 @@ def master_driver_delete_post(driver_id):
 # ----------------------------
 # Orders
 # ----------------------------
-from flask import request, render_template
-
 @app.get("/orders/list")
 @login_required
 def orders_list():
@@ -547,13 +557,12 @@ def orders_list():
             where_clauses.append("o.driver_id = %s")
             params.append(user["driver_id"])
 
-    # assign 过滤
+    # assign 过滤（按状态判断）
     if assign == "assigned":
-        # 已分配：车辆和司机都不为空
-        where_clauses.append("o.vehicle_id IS NOT NULL AND o.driver_id IS NOT NULL")
+        where_clauses.append("o.status <> N'待分配'")
     elif assign == "unassigned":
-        # 未分配：车辆或司机任一为空
-        where_clauses.append("(o.vehicle_id IS NULL OR o.driver_id IS NULL)")
+        where_clauses.append("o.status = N'待分配'")
+
 
     # 拼接 WHERE
     where_sql = ""
@@ -661,6 +670,7 @@ def orders_create_post():
         driver_id_raw = request.form.get("driver_id", "").strip()
         vehicle_id = int(vehicle_id_raw) if vehicle_id_raw else None
         driver_id = int(driver_id_raw) if driver_id_raw else None
+        status = request.form.get("status", "").strip()
 
         # 若填写了车辆/司机，校验必须属于当前车队
         if vehicle_id is not None:
@@ -674,14 +684,6 @@ def orders_create_post():
             if not d or d["fleet_id"] != user["fleet_id"]:
                 flash("司机不属于你的车队，无法选择。", "error")
                 return redirect(url_for("orders_new"))
-
-        # 状态规则：
-        # - 未分配（车辆或司机任一为空） => 待分配
-        # - 已分配（两者都有） => 待分配（你也可以改成运输中，但你之前明确：分配后改运输中；新建时可保持待分配）
-        if vehicle_id and driver_id:
-            status = "运输中"
-        else:
-            status = '待分配'
 
         db.execute(
             """
